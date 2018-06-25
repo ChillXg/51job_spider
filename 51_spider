@@ -1,0 +1,62 @@
+import scrapy
+import re
+from Scrapy_pachong.items import ScrapyPachongItem
+
+#url_1 = 'https://search.51job.com/list/030200,000000,0000,00,9,99,+,2,'
+#url_2 = '.html?lang=c&stype=1&postchannel=0000&workyear=99&cotype=99&degreefrom=99&jobterm=99&companysize=99&lonlat=0%2C0&radius=-1&ord_field=0&confirmdate=9&fromType=&dibiaoid=0&address=&line=&specialarea=00&from=&welfare='
+
+class A51jobSpider(scrapy.Spider):
+    name = '51job'#默认操作为 先request get到网站信息，传response回parse（），即callback
+    allowed_domains = ['www.51job.com']
+    start_urls = ['https://search.51job.com/list/030200,000000,0000,00,9,99,+,2,2.html?lang=c&stype=1&postchannel=0000&workyear=99&cotype=99&degreefrom=99&jobterm=99&companysize=99&lonlat=0%2C0&radius=-1&ord_field=0&confirmdate=9&fromType=&dibiaoid=0&address=&line=&specialarea=00&from=&welfare=%3E']
+    #url_1 = 'https://search.51job.com/list/030200,000000,0000,00,9,99,+,2,'
+    #url_2 = '.html?lang=c&stype=1&postchannel=0000&workyear=99&cotype=99&degreefrom=99&jobterm=99&companysize=99&lonlat=0%2C0&radius=-1&ord_field=0&confirmdate=9&fromType=&dibiaoid=0&address=&line=&specialarea=00&from=&welfare='
+
+    #def start_requests(self):#比较暴力的获取信息，要基于人为取得页数，输入
+        #for i in range(1, 20):#可以加个获取终结节点的判断，放后面应该逻辑顺点，可以拿到第一页之后获取循环次数
+            #url_1 = 'https://search.51job.com/list/030200,000000,0000,00,9,99,+,2,'
+            #url_2 = '.html?lang=c&stype=1&postchannel=0000&workyear=99&cotype=99&degreefrom=99&jobterm=99&companysize=99&lonlat=0%2C0&radius=-1&ord_field=0&confirmdate=9&fromType=&dibiaoid=0&address=&line=&specialarea=00&from=&welfare='
+        #url = url_1 + str(2) + url_2
+       # yield scrapy.Request(url=url, callback=self.total_)
+
+    #def total_(self, response):
+        #total = re.compile('(\d+)').search(response.css('.p_in span.td::text').extract_first()).group(1)
+        #print(total)
+        #for i in range(3, total+1):
+            #url = url_1 + i + url_2
+            #yield scrapy.Request(url=url, callback=self.parse)
+
+    def parse(self, response):
+        jobs = response.css('.dw_table div.el')
+        for job in jobs:
+            item = ScrapyPachongItem()
+            title = job.css('p.t1 span a::attr(title)').extract_first()
+            company = job.css('span.t2 a::attr(title)').extract_first()
+            work_location = job.css('span.t3::text').extract_first()
+            money = job.css('span.t4::text').extract_first()
+            show_time = job.css('span.t5::text').extract_first()
+            item['company'] = company
+            item['title'] = title
+            item['work_location'] = work_location
+            item['money'] = money
+            item['show_time'] = show_time
+            yield item
+        #if response.css('.p_in ul li.bk a::text').extract_first != 5:
+            #next = response.css('.p_in ul li.bk a::attr(href) ').extract()
+            #if next[2]=='':
+               # yield scrapy.Request(url=next, callback=self.parse)
+           # else:
+               # yield scrapy.Request(url=next[2], callback=self.parse)
+            #total = re.compile('(\d+)').search(response.css('.p_in span.td::text').extract_first()).group(1)
+            #print(type(total))
+            #for i in range(2, total+1):
+                #url = url_1 + i + url_2
+                #yield scrapy.Request(url=url, callback=self.parse)
+        next = response.css('.p_in li.bk a::attr(href)').extract()
+        print (next[1])
+        #if next[1]:
+        url = next[1]##麻了个比的，没写don't_filter=TRUE弄了一晚上
+        yield scrapy.Request(url=url, callback=self.parse, dont_filter=True)
+        #else:
+            #url = next[0]
+           # yield scrapy.Request(url=url, callback=self.parse)
